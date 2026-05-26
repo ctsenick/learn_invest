@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOLL + MACD 交易學習手冊</title>
+<style>
+  :root {
+    --bg: #eaf6ea;
+    --panel: #ffffff;
+    --border: #b2ddb2;
+    --text: #1a3320;
+    --muted: #5a8060;
+    --bull: #d32f2f;
+    --bear: #2e7d32;
+    --macd-pos: #d32f2f;
+    --macd-neg: #388e3c;
+    --mid: #1565c0;
+    --upper: #e65100;
+    --lower: #0277bd;
+    --yellow: #c77800;
+    --purple: #6a1b9a;
+    --accent: #388e3c;
+    --header-bg: #2e7d32;
+    --nav-bg: #ffffff;
+    --tip-bg: #fffde7;
+    --tip-border: #f9a825;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; line-height: 1.6; }
+
+  /* ── 頂部 Header ── */
+  header {
+    background: linear-gradient(135deg, #33a84a 0%, #1b5e20 100%);
+    border-bottom: 3px solid #fdd835;
+    padding: 24px 30px;
+    text-align: center;
+  }
+  header h1 { font-size: 2rem; color: #fdd835; letter-spacing: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+  header p { color: #c8e6c9; margin-top: 6px; font-size: 1rem; }
+
+  /* ── 導覽列 ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #ffffff;
+    border-bottom: 2px solid #b2ddb2;
+    box-shadow: 0 2px 8px rgba(46,125,50,0.12);
+    display: flex; flex-wrap: wrap; gap: 4px;
+    padding: 8px 16px;
+  }
+  nav button {
+    background: #f1f8e9; border: 1px solid #a5d6a7;
+    color: #2e7d32; padding: 6px 14px; border-radius: 20px;
+    cursor: pointer; font-size: 0.85rem; transition: all 0.2s;
+    font-family: inherit; font-weight: 500;
+  }
+  nav button:hover, nav button.active {
+    background: #fdd835; border-color: #f9a825;
+    color: #1a3320; font-weight: bold;
+  }
+
+  /* ── 主要內容 ── */
+  main { max-width: 900px; margin: 0 auto; padding: 30px 20px; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── 卡片 ── */
+  .card {
+    background: #ffffff; border: 1px solid #c8e6c9;
+    border-radius: 12px; padding: 22px; margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(46,125,50,0.08);
+  }
+  .card h2 { font-size: 1.3rem; margin-bottom: 14px; color: #1b5e20; }
+  .card h3 { font-size: 1.1rem; margin: 16px 0 8px; color: #1565c0; }
+  .card p, .card li { color: #2d4a35; font-size: 0.95rem; margin-bottom: 8px; }
+  .card ul, .card ol { padding-left: 20px; }
+  .card li { margin-bottom: 6px; }
+
+  /* ── 高亮文字 ── */
+  .bull { color: var(--bull); font-weight: bold; }
+  .bear { color: var(--bear); font-weight: bold; }
+  .mid-text { color: var(--mid); font-weight: bold; }
+  .yellow { color: var(--yellow); font-weight: bold; }
+  .purple-text { color: var(--purple); font-weight: bold; }
+  .muted { color: var(--muted); }
+
+  /* ── 提示框 ── */
+  .tip {
+    border-left: 3px solid #f9a825; background: #fffde7;
+    padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 12px 0;
+    font-size: 0.9rem; color: #6d4c00;
+  }
+  .tip-bull { border-left-color: var(--bull); background: #fff5f5; color: #b71c1c; }
+  .tip-bear { border-left-color: var(--bear); background: #f1f8e9; color: #1b5e20; }
+  .tip-blue { border-left-color: var(--mid); background: #e3f2fd; color: #0d47a1; }
+
+  /* ── 圖表展示區（純 CSS 繪製）── */
+  .chart-container {
+    background: #f9fbe7; border: 2px solid #c5e1a5;
+    border-radius: 8px; padding: 16px; margin: 14px 0;
+    overflow: hidden; position: relative;
+  }
+  .chart-label { font-size: 0.78rem; color: var(--muted); margin-bottom: 8px; }
+
+  /* K線圖 CSS */
+  .candles { display: flex; align-items: flex-end; gap: 4px; height: 120px; margin-bottom: 8px; }
+  .candle { display: flex; flex-direction: column; align-items: center; flex: 1; }
+  .wick { width: 2px; background: #666; }
+  .body { width: 10px; border-radius: 1px; }
+  .body.up { background: var(--bull); }
+  .body.down { background: var(--bear); }
+
+  /* 布林帶示意圖 */
+  .boll-demo { position: relative; height: 140px; background: #f9fbe7; border-radius: 6px; overflow: hidden; }
+  .boll-demo svg { width: 100%; height: 100%; }
+
+  /* 信號表格 */
+  .signal-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .signal-table th {
+    background: #e8f5e9; color: #1b5e20; padding: 10px 12px;
+    text-align: left; border-bottom: 2px solid #a5d6a7;
+  }
+  .signal-table td { padding: 9px 12px; border-bottom: 1px solid #dcedc8; vertical-align: top; color: #2d4a35; }
+  .signal-table tr:hover td { background: #f1f8e9; }
+  .signal-table .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 0.78rem; font-weight: bold; margin: 1px;
+  }
+  .tag-bull { background: #fce4e4; color: #c62828; border: 1px solid #ef9a9a; }
+  .tag-bear { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+  .tag-watch { background: #fffde7; color: #c77800; border: 1px solid #ffe082; }
+  .tag-hold { background: #f3e5f5; color: #6a1b9a; border: 1px solid #ce93d8; }
+
+  /* 步驟指引 */
+  .step { display: flex; gap: 16px; margin-bottom: 18px; align-items: flex-start; }
+  .step-num {
+    flex-shrink: 0; width: 34px; height: 34px;
+    background: #388e3c; color: #fff; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; font-size: 1rem;
+  }
+  .step-content h4 { color: #1a3320; margin-bottom: 5px; }
+  .step-content p { color: #5a8060; font-size: 0.9rem; }
+
+  /* 背離說明區 */
+  .diverge-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width:600px) { .diverge-grid { grid-template-columns: 1fr; } }
+  .diverge-card {
+    border-radius: 8px; padding: 16px;
+  }
+  .diverge-card.top { background: #fff5f5; border: 1px solid #ef9a9a; }
+  .diverge-card.bot { background: #f1f8e9; border: 1px solid #a5d6a7; }
+  .diverge-card h3 { margin-bottom: 10px; }
+
+  /* 快速查詢卡 */
+  .quick-row {
+    display: flex; gap: 10px; align-items: center;
+    padding: 10px; border-bottom: 1px solid #dcedc8;
+    font-size: 0.88rem;
+  }
+  .quick-row:last-child { border-bottom: none; }
+  .quick-icon { font-size: 1.4rem; flex-shrink: 0; width: 36px; text-align: center; }
+  .quick-name { font-weight: bold; min-width: 80px; }
+  .quick-desc { color: #5a8060; flex: 1; }
+  .quick-action { color: #c77800; font-weight: bold; min-width: 60px; text-align: right; }
+
+  /* 小測驗 */
+  .quiz-q { margin-bottom: 22px; }
+  .quiz-q p { font-size: 1rem; margin-bottom: 12px; color: #1a3320; font-weight: bold; }
+  .quiz-options { display: flex; flex-direction: column; gap: 8px; }
+  .quiz-options button {
+    background: #f1f8e9; border: 1px solid #a5d6a7;
+    color: #1a3320; padding: 10px 16px; border-radius: 8px;
+    cursor: pointer; text-align: left; font-size: 0.9rem;
+    font-family: inherit; transition: all 0.2s;
+  }
+  .quiz-options button:hover { border-color: #388e3c; background: #e8f5e9; }
+  .quiz-options button.correct { background: #e8f5e9; border-color: #2e7d32; color: #1b5e20; font-weight: bold; }
+  .quiz-options button.wrong { background: #fff5f5; border-color: #e53935; color: #b71c1c; }
+  .quiz-feedback { margin-top: 8px; padding: 10px; border-radius: 6px; font-size: 0.9rem; display: none; }
+
+  /* 動畫 */
+  @keyframes fadeIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+  .section.active { animation: fadeIn 0.3s ease; }
+
+  /* 進度條 */
+  .progress-bar { height: 4px; background: var(--border); border-radius: 2px; margin: 20px 0; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.5s; }
+
+  /* ── SVG 圖示（模擬K線圖）── */
+  .mini-chart { border: 1px solid #c8e6c9; border-radius: 6px; background: #f9fbe7; }
+
+  /* 響應式 */
+  @media(max-width:640px) {
+    header h1 { font-size: 1.4rem; }
+    nav button { font-size: 0.78rem; padding: 5px 10px; }
+    .signal-table { font-size: 0.78rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📊 BOLL + MACD 交易學習手冊</h1>
+  <p>從零開始，一步一步學會用這兩個指標在任何交易所操作</p>
+</header>
+
+<nav id="nav">
+  <button class="active" onclick="show('s0',this)">🏠 開始</button>
+  <button onclick="show('s1',this)">📈 K線基礎</button>
+  <button onclick="show('s2',this)">🎯 布林帶(BB)</button>
+  <button onclick="show('s3',this)">⚡ MACD</button>
+  <button onclick="show('s4',this)">🔧 如何開啟指標</button>
+  <button onclick="show('s5',this)">📋 8種交易信號</button>
+  <button onclick="show('s6',this)">🔄 背離操作</button>
+  <button onclick="show('s7',this)">📌 快速查詢卡</button>
+  <button onclick="show('s8',this)">✅ 小測驗</button>
+</nav>
+
+<main>
+
+<!-- ══════════════════════════════════
+     第0頁：開始
+══════════════════════════════════ -->
+<div id="s0" class="section active">
+  <div class="card">
+    <h2>👋 歡迎！你即將學會的是什麼？</h2>
+    <p>這套方法叫做「<span class="yellow">布林帶 + MACD 雙指標共振</span>」，是專業交易者用來判斷<strong>何時買入、何時賣出</strong>的一套系統。</p>
+    <br>
+    <p>學完後，你打開任何交易所（幣安、歐易、國泰君安、富途等），只要開啟這兩個指標，就能：</p>
+    <ul style="margin-top:10px;">
+      <li>✅ 判斷現在是<span class="bull"> 上漲趨勢</span>還是<span class="bear"> 下跌趨勢</span></li>
+      <li>✅ 找到合理的<span class="mid-text"> 進場點</span>（該買的時機）</li>
+      <li>✅ 設定<span class="yellow"> 止損點</span>（虧多少就認賠離場）</li>
+      <li>✅ 識別<span class="purple-text"> 反轉信號</span>（趨勢快反轉了）</li>
+      <li>✅ 知道何時<span class="muted"> 不要操作</span>（橫盤震盪）</li>
+    </ul>
+    <div class="tip">
+      💡 <strong>這個手冊怎麼用？</strong> 從左到右，按順序點擊上方每個標籤學習。每學完一章再按下一個。最後用「小測驗」確認你學會了！
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🗺️ 學習路線圖</h2>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content"><h4>K線基礎 — 認識圖表上的每一根蠟燭</h4><p>了解每根K線代表什麼意思</p></div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content"><h4>布林帶(BB) — 價格的「通道」</h4><p>3條線如何告訴你價格是否太高或太低</p></div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content"><h4>MACD — 動能的「量表」</h4><p>快慢線交叉如何告訴你趨勢方向</p></div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content"><h4>如何在交易所開啟指標</h4><p>實際操作步驟，任何交易所都適用</p></div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content"><h4>8種交易信號</h4><p>學會識別不同市場狀況下的操作信號</p></div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-content"><h4>背離操作</h4><p>掌握最強的「反轉預警」技術</p></div>
+    </div>
+    <div class="step">
+      <div class="step-num">7</div>
+      <div class="step-content"><h4>快速查詢卡 + 測驗</h4><p>複習鞏固，形成肌肉記憶</p></div>
+    </div>
+
+    <div style="margin-top:16px; text-align:center;">
+      <button onclick="show('s1',document.querySelectorAll('nav button')[1])" style="background:var(--accent);border:none;color:#fff;padding:12px 30px;border-radius:8px;cursor:pointer;font-size:1rem;font-family:inherit;">
+        ▶ 開始學習 →
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第1頁：K線基礎
+══════════════════════════════════ -->
+<div id="s1" class="section">
+  <div class="card">
+    <h2>📈 K線（蠟燭圖）是什麼？</h2>
+    <p>你在交易所看到的圖表，每一根「蠟燭」就是一根 <strong>K線</strong>，代表<strong>一段時間內</strong>的價格變化。</p>
+
+    <h3>一根K線包含4個資訊：</h3>
+    <div class="chart-container">
+      <svg viewBox="0 0 400 200" style="width:100%;max-width:400px;display:block;margin:0 auto;">
+        <!-- 上影線 -->
+        <line x1="200" y1="20" x2="200" y2="60" stroke="#aaa" stroke-width="2"/>
+        <!-- 紅色實體（陽線/漲）-->
+        <rect x="175" y="60" width="50" height="80" fill="#f85149" rx="2"/>
+        <!-- 下影線 -->
+        <line x1="200" y1="140" x2="200" y2="175" stroke="#aaa" stroke-width="2"/>
+        <!-- 標籤 -->
+        <text x="265" y="28" fill="#6a8870" font-size="13">最高價（High）</text>
+        <line x1="202" y1="25" x2="258" y2="25" stroke="#b2d8b2" stroke-width="1"/>
+
+        <text x="265" y="68" fill="#f85149" font-size="13">開盤價（Open）</text>
+        <line x1="225" y1="65" x2="258" y2="65" stroke="#b2d8b2" stroke-width="1"/>
+
+        <text x="265" y="138" fill="#f85149" font-size="13">收盤價（Close）</text>
+        <line x1="225" y1="135" x2="258" y2="135" stroke="#b2d8b2" stroke-width="1"/>
+
+        <text x="265" y="178" fill="#6a8870" font-size="13">最低價（Low）</text>
+        <line x1="202" y1="172" x2="258" y2="172" stroke="#b2d8b2" stroke-width="1"/>
+
+        <!-- 說明 -->
+        <text x="50" y="100" fill="#f85149" font-size="14" font-weight="bold">陽線</text>
+        <text x="30" y="118" fill="#6a8870" font-size="11">收盤 > 開盤 = 漲</text>
+      </svg>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+      <div class="tip-bull">
+        <strong>🔴 紅色K線（陽線）</strong><br>
+        收盤價 > 開盤價<br>
+        代表這段時間<strong>上漲</strong>
+      </div>
+      <div class="tip-bear">
+        <strong>🟢 綠色K線（陰線）</strong><br>
+        收盤價 &lt; 開盤價<br>
+        代表這段時間<strong>下跌</strong>
+      </div>
+    </div>
+
+    <div class="tip">
+      💡 <strong>台灣/中國習慣：紅色=漲、綠色=跌</strong>（和歐美相反）。大多數亞洲交易所都是這個顯示方式。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>⏱️ 時間週期是什麼？</h2>
+    <p>每根K線代表多長時間，取決於你選的<strong>週期</strong>：</p>
+    <div class="signal-table" style="overflow-x:auto;">
+      <table class="signal-table">
+        <tr>
+          <th>週期</th>
+          <th>每根K線代表</th>
+          <th>適合誰</th>
+        </tr>
+        <tr><td><span class="yellow">1分鐘</span></td><td>1分鐘的價格</td><td>極短線、scalping</td></tr>
+        <tr><td><span class="yellow">15分鐘</span></td><td>15分鐘的價格</td><td>日內短線</td></tr>
+        <tr><td><span class="yellow">1小時</span></td><td>1小時的價格</td><td>⭐ 建議新手從這裡開始</td></tr>
+        <tr><td><span class="yellow">4小時</span></td><td>4小時的價格</td><td>波段交易</td></tr>
+        <tr><td><span class="yellow">日線(1D)</span></td><td>1天的價格</td><td>中長線投資</td></tr>
+      </table>
+    </div>
+    <div class="tip">💡 圖片中建議「1小時及以上週期，周期越大可靠性越高」。新手建議從<strong>1小時或4小時</strong>開始練習觀察。</div>
+  </div>
+
+  <div style="text-align:right;">
+    <button onclick="show('s2',document.querySelectorAll('nav button')[2])" style="background:var(--accent);border:none;color:#fff;padding:10px 22px;border-radius:8px;cursor:pointer;font-family:inherit;">
+      下一章：布林帶 →
+    </button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第2頁：布林帶
+══════════════════════════════════ -->
+<div id="s2" class="section">
+  <div class="card">
+    <h2>🎯 布林帶（Bollinger Bands / BOLL）</h2>
+    <p>布林帶是由<strong>3條線</strong>組成，包圍著K線走動，像一個<strong>價格通道</strong>。</p>
+
+    <div class="chart-container">
+      <div class="chart-label">布林帶示意圖</div>
+      <svg viewBox="0 0 500 180" style="width:100%;">
+        <!-- 上軌 -->
+        <path d="M20,40 Q100,25 180,35 Q260,45 340,30 Q420,18 480,28" fill="none" stroke="#f0883e" stroke-width="2"/>
+        <!-- 中軌 -->
+        <path d="M20,90 Q100,82 180,88 Q260,95 340,85 Q420,75 480,80" fill="none" stroke="#58a6ff" stroke-width="2.5"/>
+        <!-- 下軌 -->
+        <path d="M20,140 Q100,145 180,138 Q260,145 340,140 Q420,130 480,135" fill="none" stroke="#79c0ff" stroke-width="2"/>
+        <!-- 填充區域 -->
+        <path d="M20,40 Q100,25 180,35 Q260,45 340,30 Q420,18 480,28 L480,135 Q420,130 340,140 Q260,145 180,138 Q100,145 20,140 Z" fill="#58a6ff" fill-opacity="0.05"/>
+
+        <!-- K線（簡化）-->
+        <rect x="55" y="80" width="8" height="18" fill="#f85149"/>
+        <rect x="80" y="85" width="8" height="12" fill="#3fb950"/>
+        <rect x="105" y="78" width="8" height="16" fill="#f85149"/>
+        <rect x="220" y="84" width="8" height="20" fill="#f85149"/>
+        <rect x="245" y="88" width="8" height="15" fill="#3fb950"/>
+        <rect x="350" y="75" width="8" height="18" fill="#f85149"/>
+        <rect x="375" y="70" width="8" height="22" fill="#3fb950"/>
+
+        <!-- 標籤 -->
+        <text x="490" y="32" fill="#f0883e" font-size="12">上軌</text>
+        <text x="490" y="84" fill="#58a6ff" font-size="12">中軌</text>
+        <text x="490" y="140" fill="#79c0ff" font-size="12">下軌</text>
+
+        <!-- 箭頭標示突破 -->
+        <text x="130" y="168" fill="#6a8870" font-size="10">← 在中軌附近震盪 →</text>
+      </svg>
+    </div>
+
+    <h3>3條線各代表什麼？</h3>
+    <div class="tip-bull">
+      <strong style="color:#f0883e">🟠 上軌（Upper Band）</strong> — 壓力線<br>
+      = 中軌 + 2倍標準差。價格靠近這裡代表可能<strong>偏高</strong>，注意回落。
+    </div>
+    <div class="tip-blue" style="margin-top:8px;">
+      <strong style="color:#58a6ff">🔵 中軌（Middle Band）</strong> — 均線（最重要！）<br>
+      = 20日均線（MA20）。這是<strong>趨勢方向的核心</strong>。中軌向上＝多頭，向下＝空頭，走平＝震盪。
+    </div>
+    <div class="tip-bear" style="margin-top:8px;">
+      <strong style="color:#79c0ff">🔵 下軌（Lower Band）</strong> — 支撐線<br>
+      = 中軌 − 2倍標準差。價格靠近這裡代表可能<strong>偏低</strong>，注意反彈。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🔑 布林帶的4個關鍵判斷</h2>
+
+    <div class="step">
+      <div class="step-num" style="background:#3d2a00;">🟠</div>
+      <div class="step-content">
+        <h4>通道開口擴張 → 趨勢加速中</h4>
+        <p>上軌和下軌距離越來越大 = 行情在快速移動。多頭時配合加倉，空頭時持有空單。</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:#001a2a;">🔵</div>
+      <div class="step-content">
+        <h4>布林帶縮口 → 不要進場！</h4>
+        <p>3條線靠攏在一起 = 橫盤震盪，方向不明。這時候進場容易被打止損，<strong>觀望為主</strong>。</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:#1a0e00;">🔴</div>
+      <div class="step-content">
+        <h4>價格突破中軌（向上）→ 多頭啟動信號</h4>
+        <p>價格從中軌下方穿越到中軌上方，中軌開始走平或向上 = 買入機會開始出現。</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:#0a1a0a;">🟢</div>
+      <div class="step-content">
+        <h4>價格跌破中軌（向下）→ 空頭啟動信號</h4>
+        <p>價格從中軌上方穿越到中軌下方，中軌開始走平或向下 = 賣出/做空機會開始出現。</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:right;">
+    <button onclick="show('s3',document.querySelectorAll('nav button')[3])" style="background:var(--accent);border:none;color:#fff;padding:10px 22px;border-radius:8px;cursor:pointer;font-family:inherit;">
+      下一章：MACD →
+    </button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第3頁：MACD
+══════════════════════════════════ -->
+<div id="s3" class="section">
+  <div class="card">
+    <h2>⚡ MACD 是什麼？</h2>
+    <p>MACD（移動平均匯聚/發散指標）是用來衡量<strong>趨勢的動能強弱</strong>，判斷行情是在加速還是減速。</p>
+    <p>它由<strong>3個部分</strong>組成：</p>
+
+    <div class="chart-container">
+      <div class="chart-label">MACD 指標示意圖（出現在K線圖下方）</div>
+      <svg viewBox="0 0 500 160" style="width:100%;">
+        <!-- 零軸線 -->
+        <line x1="20" y1="80" x2="480" y2="80" stroke="#b2d8b2" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="485" y="84" fill="#8aaa90" font-size="10">零軸</text>
+
+        <!-- 紅色柱（正柱/紅柱）-->
+        <rect x="40" y="60" width="14" height="20" fill="#f85149" opacity="0.8"/>
+        <rect x="60" y="50" width="14" height="30" fill="#f85149" opacity="0.8"/>
+        <rect x="80" y="45" width="14" height="35" fill="#f85149" opacity="0.9"/>
+        <rect x="100" y="55" width="14" height="25" fill="#f85149" opacity="0.7"/>
+        <rect x="120" y="65" width="14" height="15" fill="#f85149" opacity="0.6"/>
+
+        <!-- 綠色柱（負柱/綠柱）-->
+        <rect x="200" y="80" width="14" height="18" fill="#3fb950" opacity="0.7"/>
+        <rect x="220" y="80" width="14" height="28" fill="#3fb950" opacity="0.8"/>
+        <rect x="240" y="80" width="14" height="35" fill="#3fb950" opacity="0.9"/>
+        <rect x="260" y="80" width="14" height="22" fill="#3fb950" opacity="0.7"/>
+        <rect x="280" y="80" width="14" height="12" fill="#3fb950" opacity="0.6"/>
+
+        <!-- 更多紅柱 -->
+        <rect x="360" y="62" width="14" height="18" fill="#f85149" opacity="0.7"/>
+        <rect x="380" y="55" width="14" height="25" fill="#f85149" opacity="0.85"/>
+        <rect x="400" y="48" width="14" height="32" fill="#f85149" opacity="0.9"/>
+        <rect x="420" y="52" width="14" height="28" fill="#f85149" opacity="0.8"/>
+
+        <!-- DIF線（快線）-->
+        <path d="M20,75 Q80,55 140,72 Q180,82 220,85 Q280,95 320,88 Q380,68 460,62" fill="none" stroke="#f0883e" stroke-width="1.8"/>
+        <!-- DEA線（慢線）-->
+        <path d="M20,76 Q80,65 140,74 Q180,80 220,84 Q280,90 320,86 Q380,72 460,66" fill="none" stroke="#58a6ff" stroke-width="1.8"/>
+
+        <!-- 標籤 -->
+        <text x="25" y="40" fill="#f85149" font-size="11">🔴 紅柱（正柱）= 多頭動能</text>
+        <text x="200" y="130" fill="#3fb950" font-size="11">🟢 綠柱（負柱）= 空頭動能</text>
+        <text x="320" y="115" fill="#f0883e" font-size="10">— DIF（快線）</text>
+        <text x="320" y="128" fill="#58a6ff" font-size="10">— DEA（慢線）</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🔍 MACD 3個組成部分詳解</h2>
+
+    <div class="tip-bull">
+      <strong>🟠 DIF（快線/白線）</strong><br>
+      = 12日均線 − 26日均線。反應較快，先行感應趨勢變化。<br>
+      <span class="muted">交易所上常顯示為白色或橙色</span>
+    </div>
+    <div class="tip-blue" style="margin-top:8px;">
+      <strong>🔵 DEA（慢線/信號線）</strong><br>
+      = DIF的9日均線。反應較慢，代表趨勢的確認。<br>
+      <span class="muted">交易所上常顯示為藍色或黃色</span>
+    </div>
+    <div class="tip" style="margin-top:8px;">
+      <strong>🟥🟩 MACD柱（Histogram）</strong><br>
+      = DIF − DEA。<br>
+      • 柱子在<span class="bull">零軸上方</span>且<span class="bull">紅色變大</span> = 多頭動能增強<br>
+      • 柱子在<span class="bear">零軸下方</span>且<span class="bear">綠色變大</span> = 空頭動能增強
+    </div>
+
+    <h3>最重要的3個信號：</h3>
+    <div class="signal-table" style="overflow-x:auto;">
+      <table class="signal-table">
+        <tr><th>信號</th><th>發生了什麼</th><th>意義</th></tr>
+        <tr>
+          <td><span class="bull">金叉</span></td>
+          <td>DIF（快線）從下方穿越DEA（慢線）向上</td>
+          <td><span class="bull">買入信號</span>，多頭啟動</td>
+        </tr>
+        <tr>
+          <td><span class="bear">死叉</span></td>
+          <td>DIF（快線）從上方穿越DEA（慢線）向下</td>
+          <td><span class="bear">賣出信號</span>，空頭啟動</td>
+        </tr>
+        <tr>
+          <td><span class="yellow">零軸位置</span></td>
+          <td>金叉發生在零軸上方 or 下方</td>
+          <td>上方金叉更強，下方金叉更弱</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🔗 布林帶 + MACD 如何搭配？</h2>
+    <p>單獨用一個指標容易有<strong>假信號</strong>。兩個指標同時出現信號才叫「<span class="yellow">共振</span>」，可靠性更高。</p>
+    <div class="tip">
+      <strong>共振原理：</strong><br>
+      ✅ 布林帶說「突破中軌向上」 <strong>+</strong> MACD說「零軸附近金叉」<br>
+      = 兩個指標都同意上漲 → <span class="bull">強烈買入信號</span><br><br>
+      ❌ 只有布林帶突破中軌，MACD還在死叉狀態<br>
+      = 信號不夠強，等待確認或觀望
+    </div>
+  </div>
+
+  <div style="text-align:right;">
+    <button onclick="show('s4',document.querySelectorAll('nav button')[4])" style="background:var(--accent);border:none;color:#fff;padding:10px 22px;border-radius:8px;cursor:pointer;font-family:inherit;">
+      下一章：如何開啟指標 →
+    </button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第4頁：如何在交易所開啟指標
+══════════════════════════════════ -->
+<div id="s4" class="section">
+  <div class="card">
+    <h2>🔧 如何在任何交易所開啟 BOLL + MACD</h2>
+    <p>無論你用的是幣安、OKX（歐易）、富途、永豐、國泰君安，步驟基本上都一樣：</p>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>進入K線圖（圖表頁面）</h4>
+        <p>點擊任何一個股票或幣種，找到「圖表」或「K線」按鈕。通常在交易頁面頂部。</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>找到「指標」按鈕</h4>
+        <p>在圖表工具列找到「指標」、「Indicators」、「技術指標」或一個類似「f(x)」的按鈕，點擊它。</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>搜尋並加入「BOLL」（布林帶）</h4>
+        <p>在搜尋框輸入「BOLL」或「Bollinger」，點擊加入。圖表上會出現3條線（上軌、中軌、下軌）。</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h4>搜尋並加入「MACD」</h4>
+        <p>再次搜尋「MACD」，點擊加入。圖表<strong>下方</strong>會出現新的區域，顯示柱子和快慢線。</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <h4>選擇時間週期</h4>
+        <p>在圖表頂部點選時間週期。建議新手先選「<span class="yellow">1H</span>（1小時）」或「<span class="yellow">4H</span>（4小時）」觀察。</p>
+      </div>
+    </div>
+
+    <div class="tip">
+      💡 <strong>預設參數就可以用！</strong><br>
+      BOLL 預設: 週期20, 標準差2<br>
+      MACD 預設: 快線12, 慢線26, 信號線9<br>
+      不需要修改任何數值，用預設值即可。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📱 各平台對應名稱</h2>
+    <div class="signal-table" style="overflow-x:auto;">
+      <table class="signal-table">
+        <tr><th>平台</th><th>布林帶叫法</th><th>MACD叫法</th><th>指標入口</th></tr>
+        <tr><td>幣安 Binance</td><td>BOLL</td><td>MACD</td><td>圖表頁點「指標」</td></tr>
+        <tr><td>OKX 歐易</td><td>BOLL</td><td>MACD</td><td>圖表頁點「指標」</td></tr>
+        <tr><td>TradingView</td><td>Bollinger Bands</td><td>MACD</td><td>點「Indicators」</td></tr>
+        <tr><td>富途牛牛</td><td>布林線/BOLL</td><td>MACD</td><td>點「技術指標」</td></tr>
+        <tr><td>Yahoo Finance</td><td>Bollinger Bands</td><td>MACD</td><td>點「Indicators」</td></tr>
+      </table>
+    </div>
+    <div class="tip-blue">
+      🔵 <strong>強烈推薦：</strong>用 <strong>TradingView.com</strong> 練習！免費、介面清晰，可以搜尋任何股票或加密貨幣，非常適合學習。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>👁️ 設定好後你會看到什麼？</h2>
+    <p>圖表會變成這樣的樣子：</p>
+    <div class="chart-container">
+      <svg viewBox="0 0 500 220" style="width:100%;">
+        <!-- 分隔線 -->
+        <line x1="0" y1="150" x2="500" y2="150" stroke="#c5e1c5" stroke-width="1"/>
+        <!-- 上方：K線 + 布林帶 -->
+        <text x="10" y="18" fill="#6a8870" font-size="11">K線 + 布林帶區域</text>
+
+        <!-- 布林帶 -->
+        <path d="M10,45 Q100,35 200,42 Q320,50 490,38" fill="none" stroke="#f0883e" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <path d="M10,80 Q100,75 200,78 Q320,85 490,76" fill="none" stroke="#58a6ff" stroke-width="2"/>
+        <path d="M10,115 Q100,112 200,118 Q320,120 490,114" fill="none" stroke="#79c0ff" stroke-width="1.5" stroke-dasharray="3,2"/>
+
+        <!-- K線 -->
+        <rect x="40" y="70" width="10" height="18" fill="#f85149"/>
+        <rect x="70" y="72" width="10" height="15" fill="#3fb950"/>
+        <rect x="100" y="68" width="10" height="20" fill="#f85149"/>
+        <rect x="130" y="74" width="10" height="14" fill="#f85149"/>
+        <rect x="200" y="76" width="10" height="16" fill="#f85149"/>
+        <rect x="230" y="78" width="10" height="13" fill="#3fb950"/>
+        <rect x="310" y="68" width="10" height="20" fill="#f85149"/>
+        <rect x="340" y="63" width="10" height="25" fill="#f85149"/>
+        <rect x="370" y="60" width="10" height="28" fill="#f85149"/>
+        <rect x="400" y="65" width="10" height="22" fill="#f85149"/>
+
+        <!-- 標籤 -->
+        <text x="410" y="36" fill="#f0883e" font-size="9">上軌</text>
+        <text x="410" y="75" fill="#58a6ff" font-size="9">中軌</text>
+        <text x="410" y="118" fill="#79c0ff" font-size="9">下軌</text>
+
+        <!-- 下方：MACD -->
+        <text x="10" y="165" fill="#6a8870" font-size="11">MACD 指標區域</text>
+        <line x1="10" y1="185" x2="490" y2="185" stroke="#c5e1c5" stroke-width="1" stroke-dasharray="2,3"/>
+        <text x="492" y="188" fill="#555" font-size="8">零軸</text>
+
+        <rect x="40" y="175" width="8" height="10" fill="#f85149" opacity="0.8"/>
+        <rect x="60" y="170" width="8" height="15" fill="#f85149" opacity="0.8"/>
+        <rect x="80" y="168" width="8" height="17" fill="#f85149" opacity="0.9"/>
+        <rect x="100" y="172" width="8" height="13" fill="#f85149" opacity="0.7"/>
+        <rect x="200" y="185" width="8" height="12" fill="#3fb950" opacity="0.8"/>
+        <rect x="220" y="185" width="8" height="18" fill="#3fb950" opacity="0.8"/>
+        <rect x="310" y="172" width="8" height="13" fill="#f85149" opacity="0.7"/>
+        <rect x="330" y="168" width="8" height="17" fill="#f85149" opacity="0.8"/>
+        <rect x="350" y="163" width="8" height="22" fill="#f85149" opacity="0.9"/>
+        <rect x="370" y="166" width="8" height="19" fill="#f85149" opacity="0.85"/>
+
+        <!-- DIF/DEA -->
+        <path d="M10,183 Q80,176 140,182 Q200,188 260,186 Q340,178 460,172" fill="none" stroke="#f0883e" stroke-width="1.3"/>
+        <path d="M10,184 Q80,178 140,183 Q200,187 260,185 Q340,180 460,174" fill="none" stroke="#58a6ff" stroke-width="1.3"/>
+      </svg>
+    </div>
+    <p style="font-size:0.85rem;color:var(--muted);text-align:center;">上半部 = K線 + 布林帶三條線 ｜ 下半部 = MACD 柱子和快慢線</p>
+  </div>
+
+  <div style="text-align:right;">
+    <button onclick="show('s5',document.querySelectorAll('nav button')[5])" style="background:var(--accent);border:none;color:#fff;padding:10px 22px;border-radius:8px;cursor:pointer;font-family:inherit;">
+      下一章：8種交易信號 →
+    </button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第5頁：8種交易信號
+══════════════════════════════════ -->
+<div id="s5" class="section">
+  <div class="card">
+    <h2>📋 8種 BOLL+MACD 共振信號總覽</h2>
+    <p>以下是你圖片中完整的「布林帶+MACD期貨共振戰法」，我把每一種都用簡單的話解釋：</p>
+    <div class="tip">💡 信號分3大類：<span class="bull">做多（買入）</span>、<span class="bear">做空（賣出）</span>、<span class="yellow">特殊情況</span></div>
+  </div>
+
+  <!-- 多頭3個 -->
+  <div class="card" style="border-color: #ef9a9a; border-width: 2px;">
+    <h2 style="color:#c62828;">🔴 多頭信號（準備做多/買入）</h2>
+
+    <!-- 1 -->
+    <div style="background:#fff5f5; border-radius:8px; padding:16px; margin-bottom:14px; border:1px solid #ffcdd2;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="background:var(--bull);color:#fff;padding:3px 10px;border-radius:12px;font-size:0.85rem;font-weight:bold;">①</span>
+        <h3 style="color:var(--bull);margin:0;">多頭啟動</h3>
+        <span class="tag tag-bull">趨勢初段</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:0.88rem;">
+        <div>
+          <p style="color:var(--muted);margin-bottom:4px;">布林帶條件：</p>
+          <p>價格<strong>突破中軌</strong>向上，中軌走平或向上</p>
+        </div>
+        <div>
+          <p style="color:var(--muted);margin-bottom:4px;">MACD條件：</p>
+          <p><strong>零軸附近或上方金叉</strong>，紅柱開始放大</p>
+        </div>
+        <div>
+          <p style="color:var(--muted);margin-bottom:4px;">操作信號：</p>
+          <p><span class="bull">做多（買入）</span></p>
+        </div>
+        <div>
+          <p style="color:var(--muted);margin-bottom:4px;">止損設在：</p>
+          <p>中軌下方 或 那根K線的最低點</p>
+        </div>
+      </div>
+      <div class="tip-bull" style="margin-top:10px;">
+        💬 <strong>用大白話說：</strong>價格剛從中線下面穿上去，同時MACD也剛金叉（快線穿過慢線往上），表示上漲趨勢剛剛開始。現在買進，把止損放在中線下面。
+      </div>
+    </div>
+
+    <!-- 2 -->
+    <div style="background:#fff5f5; border-radius:8px; padding:16px; margin-bottom:14px; border:1px solid #ffcdd2;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="background:#c62828;color:#fff;padding:3px 10px;border-radius:12px;font-size:0.85rem;font-weight:bold;">②</span>
+        <h3 style="color:#c62828;margin:0;">多頭回調</h3>
+        <span class="tag tag-bull">上升中繼</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:0.88rem;">
+        <div>
+          <p style="color:var(--muted);margin-bottom:4px;">布林帶條件：</p>
+          <p>價格<strong>回踩中軌但沒跌破</strong>，中軌仍向上</p>
+        </div>
+        <div>
+          <p style="color:var(--muted);margin-bottom:4px;">MACD條件：</p>
+          <p><strong>零軸上方二次金叉</strong> 或 綠柱縮短</p>
+        </div>
+        <div>
+          <p style="color:var(--muted);margin-bottom:4px;">操作信號：</p>
+          <p><span class="bull">加多（追加買入）</span></p>
+        </div>
+        <div>
+          <p style="color:var(--muted);margin-bottom:4px;">止損設在：</p>
+          <p>中軌下方</p>
+        </div>
+      </div>
+      <div class="tip-bull" style="margin-top:10px;">
+        💬 <strong>用大白話說：</strong>上漲途中，價格往下跌到中線附近「補了口氣」，但沒跌破中線，MACD也在零軸上方再次金叉。這是上漲中途的補倉機會。
+      </div>
+    </div>
+
+    <!-- 3 -->
+    <div style="background:#fff5f5; border-radius:8px; padding:16px; border:1px solid #ffcdd2;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="background:#c62828;color:#fff;padding:3px 10px;border-radius:12px;font-size:0.85rem;font-weight:bold;">③</span>
+        <h3 style="color:#c62828;margin:0;">多頭加速</h3>
+        <span class="tag tag-bull">主升浪</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:0.88rem;">
+        <div>
+          <p style="color:var(--muted);margin-bottom:4px;">布林帶條件：</p>
+          <p>價格<strong>沿上軌運行</strong>，通道開口擴張</p>
+        </div>
+        <div>
+          <p style="color:var(--muted);margin-bottom:4px;">MACD條件：</p>
+          <p><strong>紅柱持續放大</strong>，快慢線發散（距離越來越大）</p>
+        </div>
+        <div>
+          <p style="color:var(--muted);margin-bottom:4px;">操作信號：</p>
+          <p><span class="tag tag-hold">持有 / 加倉</span></p>
+        </div>
+        <div>
+          <p style="color:var(--muted);margin-bottom:4px;">止損移到：</p>
+          <p>中軌（跟著移動，保護獲利）</p>
+        </div>
+      </div>
+      <div class="tip-bull" style="margin-top:10px;">
+        💬 <strong>用大白話說：</strong>行情正在飆漲！價格貼著上軌走，布林帶開口越來越大，MACD紅柱越來越高。這時候繼續持有，止損往上移到中線，順勢賺最多。
+      </div>
+    </div>
+  </div>
+
+  <!-- 空頭3個 -->
+  <div class="card" style="border-color: #a5d6a7; border-width: 2px;">
+    <h2 style="color:#1b5e20;">🟢 空頭信號（準備做空/賣出）</h2>
+    <div class="tip-bear">💡 如果你只買現貨（不做空），空頭信號代表「<strong>不要持有</strong>」或「把手上的貨賣掉」。</div>
+    <br>
+
+    <!-- 4 -->
+    <div style="background:#f1f8e9; border-radius:8px; padding:16px; margin-bottom:14px; border:1px solid #c8e6c9;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="background:var(--bear);color:#fff;padding:3px 10px;border-radius:12px;font-size:0.85rem;font-weight:bold;">④</span>
+        <h3 style="color:var(--bear);margin:0;">空頭啟動</h3>
+        <span class="tag tag-bear">趨勢初段</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:0.88rem;">
+        <div><p style="color:var(--muted);margin-bottom:4px;">布林帶條件：</p><p>價格<strong>跌破中軌</strong>，中軌走平或向下</p></div>
+        <div><p style="color:var(--muted);margin-bottom:4px;">MACD條件：</p><p><strong>零軸附近或下方死叉</strong>，綠柱開始放大</p></div>
+        <div><p style="color:var(--muted);margin-bottom:4px;">操作信號：</p><p><span class="bear">做空 / 賣出</span></p></div>
+        <div><p style="color:var(--muted);margin-bottom:4px;">止損設在：</p><p>中軌上方 或 那根K線的最高點</p></div>
+      </div>
+      <div class="tip-bear" style="margin-top:10px;">💬 <strong>大白話：</strong>價格剛從中線上面穿下去，MACD死叉（快線穿過慢線往下）。下跌趨勢剛開始，現貨持有者應賣出。</div>
+    </div>
+
+    <!-- 5 -->
+    <div style="background:#f1f8e9; border-radius:8px; padding:16px; margin-bottom:14px; border:1px solid #c8e6c9;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="background:#2e7d32;color:#fff;padding:3px 10px;border-radius:12px;font-size:0.85rem;font-weight:bold;">⑤</span>
+        <h3 style="color:#2e7d32;margin:0;">空頭反彈</h3>
+        <span class="tag tag-bear">下降中繼</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:0.88rem;">
+        <div><p style="color:var(--muted);margin-bottom:4px;">布林帶條件：</p><p>價格反彈到中軌附近<strong>但穿不過</strong>，中軌仍向下</p></div>
+        <div><p style="color:var(--muted);margin-bottom:4px;">MACD條件：</p><p><strong>零軸下方二次死叉</strong> 或 紅柱縮短</p></div>
+        <div><p style="color:var(--muted);margin-bottom:4px;">操作信號：</p><p><span class="bear">加空</span></p></div>
+        <div><p style="color:var(--muted);margin-bottom:4px;">止損設在：</p><p>中軌上方</p></div>
+      </div>
+      <div class="tip-bear" style="margin-top:10px;">💬 <strong>大白話：</strong>下跌途中反彈到中線，但衝不過去，MACD在零軸下方再次死叉。這是下跌中繼，逢高賣出的機會。</div>
+    </div>
+
+    <!-- 6 -->
+    <div style="background:#f1f8e9; border-radius:8px; padding:16px; border:1px solid #c8e6c9;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="background:#2e7d32;color:#fff;padding:3px 10px;border-radius:12px;font-size:0.85rem;font-weight:bold;">⑥</span>
+        <h3 style="color:#2e7d32;margin:0;">空頭加速</h3>
+        <span class="tag tag-bear">主跌浪</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:0.88rem;">
+        <div><p style="color:var(--muted);margin-bottom:4px;">布林帶條件：</p><p>價格<strong>沿下軌運行</strong>，通道開口擴張</p></div>
+        <div><p style="color:var(--muted);margin-bottom:4px;">MACD條件：</p><p><strong>綠柱持續放大</strong>，快慢線發散</p></div>
+        <div><p style="color:var(--muted);margin-bottom:4px;">操作信號：</p><p><span class="tag tag-hold">持有空單 / 加倉</span></p></div>
+        <div><p style="color:var(--muted);margin-bottom:4px;">止損移到：</p><p>中軌（往下移動）</p></div>
+      </div>
+      <div class="tip-bear" style="margin-top:10px;">💬 <strong>大白話：</strong>行情在飆跌！價格貼著下軌，MACD綠柱越來越大。繼續持有空單，止損移至中線，空單趁機加碼。</div>
+    </div>
+  </div>
+
+  <!-- 特殊情況 -->
+  <div class="card" style="border-color: #ffe082; border-width: 2px;">
+    <h2 style="color:#c77800;">⚠️ 特殊情況信號</h2>
+
+    <!-- 7a -->
+    <div style="background:#fffde7; border-radius:8px; padding:16px; margin-bottom:14px; border:1px solid #ffe082;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="background:var(--yellow);color:#000;padding:3px 10px;border-radius:12px;font-size:0.85rem;font-weight:bold;">⑦A</span>
+        <h3 style="color:var(--yellow);margin:0;">反轉預警 — 頂背離（上漲末端）</h3>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:0.88rem;">
+        <div><p style="color:var(--muted);margin-bottom:4px;">布林帶條件：</p><p>價格<strong>衝出上軌後回落</strong></p></div>
+        <div><p style="color:var(--muted);margin-bottom:4px;">MACD條件：</p><p><strong>頂背離</strong>（價格創新高，但MACD峰值反而降低）</p></div>
+        <div><p style="color:var(--muted);margin-bottom:4px;">操作信號：</p><p>多單止盈 或 輕倉試空</p></div>
+        <div><p style="color:var(--muted);margin-bottom:4px;">止損設在：</p><p>背離高點上方</p></div>
+      </div>
+      <div class="tip" style="margin-top:10px;">💬 <strong>大白話：</strong>價格雖然創了新高，但MACD的高點卻比上一次更低，代表上漲動能在衰竭。準備反轉的訊號！先把多單利潤落袋，或少量試空。</div>
+    </div>
+
+    <!-- 7b -->
+    <div style="background:#fffde7; border-radius:8px; padding:16px; margin-bottom:14px; border:1px solid #ffe082;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="background:var(--yellow);color:#000;padding:3px 10px;border-radius:12px;font-size:0.85rem;font-weight:bold;">⑦B</span>
+        <h3 style="color:var(--yellow);margin:0;">反轉預警 — 底背離（下跌末端）</h3>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:0.88rem;">
+        <div><p style="color:var(--muted);margin-bottom:4px;">布林帶條件：</p><p>價格<strong>衝出下軌後回升</strong></p></div>
+        <div><p style="color:var(--muted);margin-bottom:4px;">MACD條件：</p><p><strong>底背離</strong>（價格創新低，但MACD谷值反而升高）</p></div>
+        <div><p style="color:var(--muted);margin-bottom:4px;">操作信號：</p><p>空單止盈 或 輕倉試多</p></div>
+        <div><p style="color:var(--muted);margin-bottom:4px;">止損設在：</p><p>背離低點下方</p></div>
+      </div>
+      <div class="tip" style="margin-top:10px;">💬 <strong>大白話：</strong>價格雖然創了新低，但MACD的低點卻比上一次更高，代表下跌動能在衰竭。準備反彈的訊號！先把空單利潤落袋，或少量試多。</div>
+    </div>
+
+    <!-- 8 無效信號 -->
+    <div style="background:#f5f5f5; border-radius:8px; padding:16px; border:1px solid #e0e0e0;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="background:#666;color:#fff;padding:3px 10px;border-radius:12px;font-size:0.85rem;font-weight:bold;">⑧</span>
+        <h3 style="color:#aaa;margin:0;">無效信號（震盪行情）</h3>
+        <span class="tag tag-watch">觀望</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:0.88rem;">
+        <div><p style="color:var(--muted);margin-bottom:4px;">布林帶條件：</p><p><strong>布林帶嚴重縮口</strong>，3條線靠在一起走平</p></div>
+        <div><p style="color:var(--muted);margin-bottom:4px;">MACD條件：</p><p><strong>MACD在零軸附近反覆交叉</strong>，多空不明</p></div>
+        <div><p style="color:var(--muted);margin-bottom:4px;">操作信號：</p><p style="color:#888;">觀望，不進場</p></div>
+        <div><p style="color:var(--muted);margin-bottom:4px;">適合場景：</p><p>橫盤震盪行情</p></div>
+      </div>
+      <div class="tip" style="margin-top:10px;">💬 <strong>大白話：</strong>布林帶的3條線縮成一團，MACD在零軸上下亂跑。這種情況下進場容易被假信號騙，<strong>最好的選擇就是什麼都不做，等到方向明確再說。</strong></div>
+    </div>
+  </div>
+
+  <div style="text-align:right;">
+    <button onclick="show('s6',document.querySelectorAll('nav button')[6])" style="background:var(--accent);border:none;color:#fff;padding:10px 22px;border-radius:8px;cursor:pointer;font-family:inherit;">
+      下一章：背離操作 →
+    </button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第6頁：背離操作
+══════════════════════════════════ -->
+<div id="s6" class="section">
+  <div class="card">
+    <h2>🔄 背離（Divergence）核心操作要點</h2>
+    <p>背離是整個策略中最<strong>精準</strong>的反轉信號，但也最需要耐心確認。圖片中完整列出了操作要點：</p>
+
+    <h3>什麼是「背離」？</h3>
+    <div class="chart-container">
+      <svg viewBox="0 0 500 160" style="width:100%;">
+        <!-- 頂背離示意 -->
+        <text x="10" y="18" fill="#f85149" font-size="12" font-weight="bold">頂背離：價格新高，MACD卻更低</text>
+
+        <!-- 價格走勢 -->
+        <text x="10" y="40" fill="#6a8870" font-size="10">價格：</text>
+        <path d="M60,55 Q90,30 120,40 Q150,50 160,55" fill="none" stroke="#f85149" stroke-width="2"/>
+        <path d="M160,55 Q200,25 240,32 Q270,38 280,42" fill="none" stroke="#f85149" stroke-width="2"/>
+
+        <!-- 標記第一個高點和第二個高點 -->
+        <circle cx="120" cy="40" r="4" fill="#f85149"/>
+        <text x="110" y="32" fill="#f85149" font-size="9">第1高點</text>
+        <circle cx="240" cy="32" r="4" fill="#f85149"/>
+        <text x="230" y="24" fill="#f0883e" font-size="9">第2高點更高</text>
+        <text x="230" y="14" fill="#f0883e" font-size="9">↑</text>
+
+        <!-- MACD走勢 -->
+        <text x="10" y="88" fill="#6a8870" font-size="10">MACD：</text>
+        <path d="M60,100 Q90,85 120,90 Q150,97 160,100" fill="none" stroke="#58a6ff" stroke-width="2"/>
+        <path d="M160,100 Q200,92 240,98 Q270,103 280,105" fill="none" stroke="#58a6ff" stroke-width="2"/>
+
+        <circle cx="120" cy="90" r="4" fill="#58a6ff"/>
+        <text x="105" y="82" fill="#58a6ff" font-size="9">第1峰值</text>
+        <circle cx="240" cy="98" r="4" fill="#58a6ff"/>
+        <text x="228" y="92" fill="#79c0ff" font-size="9">第2峰值更低!</text>
+        <text x="248" y="112" fill="#79c0ff" font-size="9">↓</text>
+
+        <!-- 結論 -->
+        <rect x="10" y="130" width="270" height="22" rx="4" fill="#1a0e00" stroke="#f0883e" stroke-width="1"/>
+        <text x="18" y="145" fill="#f0883e" font-size="11">→ 動能衰竭，上漲即將結束，準備反轉向下！</text>
+
+        <!-- 底背離示意（右側） -->
+        <text x="310" y="18" fill="#3fb950" font-size="12" font-weight="bold">底背離：價格新低，MACD卻更高</text>
+
+        <text x="310" y="40" fill="#6a8870" font-size="10">價格：</text>
+        <path d="M350,50 Q380,70 410,65 Q430,62 440,58" fill="none" stroke="#3fb950" stroke-width="2"/>
+        <path d="M440,58 Q460,75 490,70" fill="none" stroke="#3fb950" stroke-width="2"/>
+        <circle cx="410" cy="65" r="4" fill="#3fb950"/>
+        <circle cx="490" cy="70" r="4" fill="#3fb950"/>
+        <text x="476" y="82" fill="#3fb950" font-size="9">更低</text>
+
+        <text x="310" y="88" fill="#6a8870" font-size="10">MACD：</text>
+        <path d="M350,112 Q380,125 410,120 Q430,118 440,116" fill="none" stroke="#58a6ff" stroke-width="2"/>
+        <path d="M440,116 Q460,120 490,114" fill="none" stroke="#58a6ff" stroke-width="2"/>
+        <circle cx="410" cy="120" r="4" fill="#58a6ff"/>
+        <circle cx="490" cy="114" r="4" fill="#58a6ff"/>
+        <text x="476" y="108" fill="#79c0ff" font-size="9">更高!</text>
+
+        <rect x="310" y="130" width="185" height="22" rx="4" fill="#0a1a0a" stroke="#3fb950" stroke-width="1"/>
+        <text x="318" y="145" fill="#3fb950" font-size="11">→ 跌勢衰竭，準備反彈！</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📊 核心操作要點對照表</h2>
+    <div class="diverge-grid">
+      <div class="diverge-card top">
+        <h3 style="color:var(--bull);">🔴 頂背離（賣出信號）</h3>
+        <div style="font-size:0.88rem;">
+          <p style="color:var(--muted);margin-bottom:3px;">背離確認條件：</p>
+          <p style="margin-bottom:10px;">價格<strong>第2高點 > 第1高點</strong><br>但 DIF <strong>第2高點 &lt; 第1高點</strong></p>
+
+          <p style="color:var(--muted);margin-bottom:3px;">最佳週期：</p>
+          <p style="margin-bottom:10px;">⭐ <strong>1小時以上</strong>（週期越大越可靠）</p>
+
+          <p style="color:var(--muted);margin-bottom:3px;">入場確認信號：</p>
+          <p style="margin-bottom:10px;">出現<strong>吞沒陰線、黃昏星</strong>等K線反轉型態</p>
+
+          <p style="color:var(--muted);margin-bottom:3px;">倉位管理：</p>
+          <p style="margin-bottom:10px;">初次試空<strong>倉位減半</strong>（這叫「左側交易」，較保守）</p>
+
+          <p style="color:var(--muted);margin-bottom:3px;">失效條件：</p>
+          <p>價格繼續上漲 <strong>並帶動MACD創新高</strong> → 背離信號無效，止損離場</p>
+        </div>
+      </div>
+      <div class="diverge-card bot">
+        <h3 style="color:var(--bear);">🟢 底背離（買入信號）</h3>
+        <div style="font-size:0.88rem;">
+          <p style="color:var(--muted);margin-bottom:3px;">背離確認條件：</p>
+          <p style="margin-bottom:10px;">價格<strong>第2低點 &lt; 第1低點</strong><br>但 DIF <strong>第2低點 > 第1低點</strong></p>
+
+          <p style="color:var(--muted);margin-bottom:3px;">最佳週期：</p>
+          <p style="margin-bottom:10px;">⭐ <strong>1小時以上</strong>（週期越大越可靠）</p>
+
+          <p style="color:var(--muted);margin-bottom:3px;">入場確認信號：</p>
+          <p style="margin-bottom:10px;">出現<strong>吞沒陽線、晨星</strong>等K線反轉型態</p>
+
+          <p style="color:var(--muted);margin-bottom:3px;">倉位管理：</p>
+          <p style="margin-bottom:10px;">初次試多<strong>倉位減半</strong>（「左側交易」，較保守）</p>
+
+          <p style="color:var(--muted);margin-bottom:3px;">失效條件：</p>
+          <p>價格繼續下跌 <strong>並帶動MACD創新低</strong> → 背離信號無效，止損離場</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>💡 新手學背離的3個重點</h2>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>先用1小時或4小時圖練習</h4>
+        <p>背離在越大的時間框架越可靠。1分鐘圖的背離幾乎沒用，1小時以上才有參考價值。</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>背離出現≠馬上進場</h4>
+        <p>看到背離後，要等K線出現「確認信號」（如大陽線/大陰線吞沒前一根），再決定是否進場。</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>一定要設止損</h4>
+        <p>背離失效率不低。如果價格繼續突破創新高/新低並且MACD也創新高/新低，代表背離失效，必須止損。</p>
+      </div>
+    </div>
+    <div class="tip">⚠️ <strong>風險提示：</strong>技術分析是輔助工具，不是保證獲利的魔法。任何交易都應設置嚴格的止損，只用自己能承受虧損的資金操作。</div>
+  </div>
+
+  <div style="text-align:right;">
+    <button onclick="show('s7',document.querySelectorAll('nav button')[7])" style="background:var(--accent);border:none;color:#fff;padding:10px 22px;border-radius:8px;cursor:pointer;font-family:inherit;">
+      下一章：快速查詢卡 →
+    </button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第7頁：快速查詢卡
+══════════════════════════════════ -->
+<div id="s7" class="section">
+  <div class="card">
+    <h2>📌 快速查詢卡（Real-time Reference）</h2>
+    <p>把這頁截圖或收藏！開交易所看到行情時，對照下面快速判斷：</p>
+
+    <h3 style="color:var(--bull);margin:16px 0 8px;">🔴 做多信號</h3>
+    <div class="quick-row">
+      <span class="quick-icon">🚀</span>
+      <span class="quick-name" style="color:var(--bull);">多頭啟動</span>
+      <span class="quick-desc">價格穿越中軌向上 + MACD零軸金叉 + 紅柱放大</span>
+      <span class="quick-action">買入</span>
+    </div>
+    <div class="quick-row">
+      <span class="quick-icon">📉</span>
+      <span class="quick-name" style="color:var(--bull);">多頭回調</span>
+      <span class="quick-desc">回踩中軌不破 + 零軸上方二次金叉</span>
+      <span class="quick-action">加多</span>
+    </div>
+    <div class="quick-row">
+      <span class="quick-icon">⚡</span>
+      <span class="quick-name" style="color:var(--bull);">多頭加速</span>
+      <span class="quick-desc">貼上軌走 + 通道擴張 + 紅柱持續放大</span>
+      <span class="quick-action">持有</span>
+    </div>
+
+    <h3 style="color:var(--bear);margin:16px 0 8px;">🟢 做空信號</h3>
+    <div class="quick-row">
+      <span class="quick-icon">📉</span>
+      <span class="quick-name" style="color:var(--bear);">空頭啟動</span>
+      <span class="quick-desc">價格跌破中軌 + MACD零軸死叉 + 綠柱放大</span>
+      <span class="quick-action" style="color:var(--bear);">賣出</span>
+    </div>
+    <div class="quick-row">
+      <span class="quick-icon">📈</span>
+      <span class="quick-name" style="color:var(--bear);">空頭反彈</span>
+      <span class="quick-desc">反彈到中軌過不去 + 零軸下方二次死叉</span>
+      <span class="quick-action" style="color:var(--bear);">加空</span>
+    </div>
+    <div class="quick-row">
+      <span class="quick-icon">💥</span>
+      <span class="quick-name" style="color:var(--bear);">空頭加速</span>
+      <span class="quick-desc">貼下軌走 + 通道擴張 + 綠柱持續放大</span>
+      <span class="quick-action" style="color:var(--bear);">持有</span>
+    </div>
+
+    <h3 style="color:var(--yellow);margin:16px 0 8px;">⚠️ 特殊情況</h3>
+    <div class="quick-row">
+      <span class="quick-icon">🔔</span>
+      <span class="quick-name" style="color:var(--yellow);">頂背離</span>
+      <span class="quick-desc">價格新高 + MACD峰值更低 + 衝出上軌回落</span>
+      <span class="quick-action">止多/試空</span>
+    </div>
+    <div class="quick-row">
+      <span class="quick-icon">🔔</span>
+      <span class="quick-name" style="color:var(--yellow);">底背離</span>
+      <span class="quick-desc">價格新低 + MACD谷值更高 + 衝出下軌回升</span>
+      <span class="quick-action">止空/試多</span>
+    </div>
+    <div class="quick-row">
+      <span class="quick-icon">🚫</span>
+      <span class="quick-name" style="color:#666;">無效信號</span>
+      <span class="quick-desc">布林帶縮口走平 + MACD零軸反覆交叉</span>
+      <span class="quick-action" style="color:#666;">觀望</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🎯 快速判斷流程（5步驟）</h2>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>看布林帶縮口了嗎？</h4>
+        <p>如果是 → <strong>觀望</strong>，什麼都不做。如果否 → 繼續第2步。</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>看中軌方向</h4>
+        <p>中軌向上 = 偏多思路；中軌向下 = 偏空思路；中軌走平 = 觀望。</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>確認MACD位置</h4>
+        <p>DIF/DEA在零軸上方 = 多頭；在下方 = 空頭；紅柱放大 = 多頭加速。</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h4>找共振信號</h4>
+        <p>布林帶和MACD都說同一件事（都多頭或都空頭）才進場，對應上方8種信號之一。</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <h4>設止損再進場</h4>
+        <p>根據你的信號找到止損位（中軌下方/上方，或前一根K線高低點），確認好才下單。</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:right;">
+    <button onclick="show('s8',document.querySelectorAll('nav button')[8])" style="background:var(--accent);border:none;color:#fff;padding:10px 22px;border-radius:8px;cursor:pointer;font-family:inherit;">
+      最後：小測驗 →
+    </button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第8頁：小測驗
+══════════════════════════════════ -->
+<div id="s8" class="section">
+  <div class="card">
+    <h2>✅ 小測驗 — 確認你學會了！</h2>
+    <p>點擊你認為正確的答案，立即知道對不對：</p>
+  </div>
+
+  <div class="card">
+    <!-- Q1 -->
+    <div class="quiz-q">
+      <p>❓ Q1：布林帶3條線中，最重要的是哪一條？</p>
+      <div class="quiz-options">
+        <button onclick="ans(this, false, '不對！上軌是壓力線，代表價格可能偏高，但不是最重要的那條。')">🟠 上軌（Upper Band）</button>
+        <button onclick="ans(this, true, '✅ 答對了！中軌（MA20）是趨勢方向的核心：向上=多頭，向下=空頭，走平=震盪。')">🔵 中軌（Middle Band / MA20）</button>
+        <button onclick="ans(this, false, '不對！下軌是支撐線，代表價格可能偏低，但不是最重要的那條。')">🔵 下軌（Lower Band）</button>
+      </div>
+      <div id="q1-feedback" class="quiz-feedback"></div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="quiz-q">
+      <p>❓ Q2：MACD「金叉」代表什麼？</p>
+      <div class="quiz-options">
+        <button onclick="ans(this, false, '不對！MACD柱子是快線減慢線，不是金叉的定義。')">MACD柱子從負轉正</button>
+        <button onclick="ans(this, false, '不對！這是死叉（空頭信號）的定義，方向相反了。')">DIF（快線）從上方穿越DEA（慢線）向下</button>
+        <button onclick="ans(this, true, '✅ 答對了！金叉 = DIF快線從下往上穿越DEA慢線，代表多頭買入信號。')">DIF（快線）從下方穿越DEA（慢線）向上</button>
+      </div>
+      <div id="q2-feedback" class="quiz-feedback"></div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="quiz-q">
+      <p>❓ Q3：你看到布林帶3條線縮成一團、MACD在零軸附近反覆交叉，你應該怎麼做？</p>
+      <div class="quiz-options">
+        <button onclick="ans(this, false, '不對！縮口走平是震盪行情，方向不明，這時做多容易被騙。')">立刻做多，等待突破</button>
+        <button onclick="ans(this, false, '不對！反覆交叉代表多空不明，做空也很危險。')">立刻做空，跟著死叉走</button>
+        <button onclick="ans(this, true, '✅ 完全正確！這就是「無效信號」，布林帶縮口+MACD零軸反覆，最好的選擇是觀望，等方向明確再說。')">觀望，什麼都不做</button>
+      </div>
+      <div id="q3-feedback" class="quiz-feedback"></div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="quiz-q">
+      <p>❓ Q4：「多頭啟動」的進場信號是哪兩個條件同時出現？</p>
+      <div class="quiz-options">
+        <button onclick="ans(this, false, '不對！縮口走平代表震盪，不是多頭啟動的條件。')">布林帶縮口 + MACD金叉</button>
+        <button onclick="ans(this, true, '✅ 答對！多頭啟動的共振：布林帶中軌剛被穿越向上（中軌走平或向上）+ MACD零軸附近或上方金叉（紅柱開始放大）。')">價格突破中軌向上 + MACD零軸金叉紅柱放大</button>
+        <button onclick="ans(this, false, '不對！貼下軌是空頭信號（空頭加速），不是多頭啟動。')">價格貼著下軌走 + MACD綠柱縮短</button>
+      </div>
+      <div id="q4-feedback" class="quiz-feedback"></div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="quiz-q">
+      <p>❓ Q5：「頂背離」發生的條件是？</p>
+      <div class="quiz-options">
+        <button onclick="ans(this, false, '不對！這反過來了，你描述的是底背離（下跌末端反轉信號）。')">價格創新低，但MACD谷值反而更高</button>
+        <button onclick="ans(this, true, '✅ 完全正確！頂背離 = 價格創新高，但MACD峰值卻比上次更低，代表上漲動能衰竭，準備反轉向下。')">價格創新高，但MACD峰值反而更低</button>
+        <button onclick="ans(this, false, '不對！價格和MACD都創新高是正常的強勢行情，不是背離。')">價格創新高，MACD也創新高</button>
+      </div>
+      <div id="q5-feedback" class="quiz-feedback"></div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="quiz-q">
+      <p>❓ Q6：背離信號出現後，什麼時候才應該進場？</p>
+      <div class="quiz-options">
+        <button onclick="ans(this, false, '不對！看到背離就直接押全倉是非常危險的，背離的失效率不低。')">立刻全倉進場</button>
+        <button onclick="ans(this, true, '✅ 正確！背離出現只是一個警告信號，還需要等K線出現吞沒陽/陰線、晨星、黃昏星等反轉型態確認，才小倉位試進場，並設好止損。')">等K線出現反轉型態確認後，小倉位進場並設止損</button>
+        <button onclick="ans(this, false, '不對！等MACD金叉再進場就太晚了，而且也不是背離操作的方式。')">等MACD金叉後再大量買入</button>
+      </div>
+      <div id="q6-feedback" class="quiz-feedback"></div>
+    </div>
+
+  </div>
+
+  <div class="card" style="text-align:center;">
+    <h2>🎉 恭喜完成學習！</h2>
+    <p>現在你已經了解 BOLL + MACD 策略的基本功。</p>
+    <br>
+    <p style="color:var(--muted);">接下來建議你：</p>
+    <ol style="text-align:left;margin-top:10px;color:#cdd9e5;">
+      <li>打開 <strong>TradingView.com</strong>，搜尋你感興趣的股票或加密貨幣</li>
+      <li>加入 BOLL 和 MACD 指標</li>
+      <li>切換到 <strong>1小時或4小時圖</strong></li>
+      <li>在歷史K線上找到你學過的<strong>8種信號</strong>，練習辨認</li>
+      <li>先「紙上模擬交易」（不用真錢），觀察信號後價格的走向</li>
+    </ol>
+    <div class="tip" style="margin-top:16px;text-align:left;">
+      ⚠️ <strong>重要提醒：</strong>技術分析只是工具之一，市場受到非常多因素影響。在用真實資金交易前，務必充分練習並了解風險管理的重要性。只用自己能接受損失的資金來操作。
+    </div>
+    <br>
+    <button onclick="show('s0',document.querySelectorAll('nav button')[0])" style="background:var(--accent);border:none;color:#fff;padding:12px 28px;border-radius:8px;cursor:pointer;font-size:1rem;font-family:inherit;">
+      🔁 重新閱讀一遍
+    </button>
+  </div>
+</div>
+
+</main>
+
+<script>
+function show(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function ans(btn, correct, msg) {
+  const siblings = btn.parentElement.querySelectorAll('button');
+  siblings.forEach(b => b.disabled = true);
+  btn.classList.add(correct ? 'correct' : 'wrong');
+
+  const qDiv = btn.closest('.quiz-q');
+  const fbId = qDiv.querySelector('.quiz-feedback');
+  fbId.style.display = 'block';
+  fbId.style.background = correct ? '#0e2a14' : '#2a0e0e';
+  fbId.style.border = '1px solid ' + (correct ? '#3fb950' : '#f85149');
+  fbId.style.color = correct ? '#7ec889' : '#f88';
+  fbId.style.padding = '10px';
+  fbId.style.borderRadius = '6px';
+  fbId.textContent = msg;
+
+  if (correct && !btn.closest('.quiz-q').dataset.marked) {
+    btn.closest('.quiz-q').dataset.marked = '1';
+  }
+}
+</script>
+</body>
+</html>
